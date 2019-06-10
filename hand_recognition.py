@@ -59,4 +59,26 @@ def detect_hand(frame, hist):
     return_value["masked"] = masked
     return_value["raw"] = raw
 
+    image, contours, _ = cv2.findContours(
+        detected_hand, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    palm_area = 0
+    flag = None
+    cnt = None
+
+    for (i, c) in enumerate(contours):
+        area = cv2.contourArea(c)
+        if area > palm_area:
+            palm_area = area
+            flag = i
+
+    if flag is not None and palm_area > 10000:
+        cnt = contours[flag]
+        return_value["contours"] = contours
+        cpy = frame.copy()
+        cv2.drawContours(cpy, [cnt], 0, (0, 255, 0), 2)
+        return_value["boundaries"] = cpy
+        return True, return_value
+    else:
+        return False, return_value
+
     return return_value
