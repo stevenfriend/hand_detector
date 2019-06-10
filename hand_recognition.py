@@ -73,7 +73,7 @@ def detect_hand(frame, hist):
 
     if flag is not None and palm_area > 10000:
         cnt = contours[flag]
-        return_value["contours"] = contours
+        return_value["contours"] = cnt
         cpy = frame.copy()
         cv2.drawContours(cpy, [cnt], 0, (0, 255, 0), 2)
         return_value["boundaries"] = cpy
@@ -81,4 +81,44 @@ def detect_hand(frame, hist):
     else:
         return False, return_value
 
-    return return_value
+def extract_fingertips(hand):
+    cnt = hand["contours"]
+    points = []
+    hull = cv2.convexHull(cnt, returnPoints=False)
+    defects = cv2.convexityDefects(cnt, hull)
+
+    # get all the "end points" using the defects and contours
+    for i in range(defects.shape[0]):
+        s, e, f, d = defects[i, 0]
+        end = tuple(cnt[e][0])
+        points.append(end)
+
+    # filter out the points which are too close to each other
+    filtered = filter_points(points, 50)
+
+    # sort the fingertips in order of increasing value of the y coordinate
+    filtered.sort(key=lambda point: point[1])
+
+    #return the fingertips, at most 5
+    return [pt for idx, pt in zip(range(5), filtered)]
+
+def dist(a, b):
+    return math.sqrt((a[0] - b[0])**2 + (b[1] - a[1])**2)
+
+def filter_points(points, filterValue):
+    for i in range(len(points)):
+        for j in range(i + 1, len(points)):
+            if points[i] and points[j] and dist(points[i], points[j]) < filterValue:
+                points[j] = None
+    filtered = []
+    for point in points:
+        if point is not None:
+            filtered.append(point)
+    return filtered
+
+def plot(frame, points):
+    radius = 5
+    colour = (0, 0, 255)
+    thickness = -1
+    for point in points:
+        cv2.circle(frame, point, radius, colour, thickness)

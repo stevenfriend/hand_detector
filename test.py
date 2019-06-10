@@ -5,7 +5,6 @@ from hand_recognition import *
 hist = capture_histogram(0)
 cap = cv2.VideoCapture(0)
 
-
 while True:
     ret, frame = cap.read()
     if not ret:
@@ -13,6 +12,8 @@ while True:
     hand_detected, hand = detect_hand(frame, hist)
     if hand_detected:
         hand_image = hand["boundaries"]
+        fingertips = extract_fingertips(hand)
+        plot(hand_image, fingertips)
         cv2.imshow("Hand Detector", hand_image)
     else:
         cv2.imshow("Hand Detector", frame)
